@@ -6,303 +6,42 @@
 <div class="auth-container">
     <div class="auth-card">
         <h1 class="auth-title">Login</h1>
-        
+
         <form method="POST" class="auth-form">
-            <!-- Phone Number Field -->
+
             <div class="form-group">
-                <label for="phone" class="form-label">Mobile Number</label>
-                <div class="input-with-country">
-                    <span class="country-code">+91</span>
-                    <input type="tel" 
-                           id="phone" 
-                           name="phone" 
-                           class="form-control" 
-                           placeholder="Enter 10-digit number" 
-                           required 
-                           pattern="[0-9]{10}"
-                           maxlength="10"
-                           oninput="formatPhone(this)">
-                </div>
+                <label for="phone">Mobile Number</label>
+                <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    class="form-control"
+                    placeholder="Enter mobile number"
+                    required
+                    pattern="[0-9]{10,15}">
             </div>
-            
-            <!-- Password Field -->
+
             <div class="form-group">
-                <label for="password" class="form-label">Password</label>
-                <div class="password-input-wrapper">
-                    <input type="password" 
-                           id="password" 
-                           name="password" 
-                           class="form-control" 
-                           placeholder="Enter your password" 
-                           required
-                           minlength="8">
-                    <button type="button" class="password-toggle-btn" onclick="togglePassword()">
-                        <i class="fas fa-eye" id="password-icon"></i>
-                    </button>
-                </div>
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Enter password"
+                    required>
             </div>
-            
-            <!-- Submit Button -->
-            <button type="submit" class="btn btn-primary" id="login-btn">
-                <span class="btn-text">Login</span>
-                <span class="btn-spinner">
-                    <i class="fas fa-spinner fa-spin"></i>
-                </span>
+
+            <button type="submit" class="btn btn-primary w-100">
+                Login
             </button>
-            
-            <!-- Registration Link -->
-            <div class="auth-footer">
-                Don't have an account? <a href="{{ url_for('register') }}">Register</a>
+
+            <div class="auth-footer text-center">
+                Don’t have an account?
+                <a href="{{ url_for('register') }}">Register</a>
             </div>
+
         </form>
     </div>
 </div>
-
-<script>
-function togglePassword() {
-    const password = document.getElementById('password');
-    const icon = document.getElementById('password-icon');
-    
-    if (password.type === 'password') {
-        password.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-    } else {
-        password.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-    }
-}
-
-function formatPhone(input) {
-    // Allow only numbers and limit to 10 digits
-    input.value = input.value.replace(/\D/g, '').substring(0, 10);
-    
-    // Add visual feedback
-    const isValid = /^\d{10}$/.test(input.value);
-    input.style.borderColor = isValid ? '#4CAF50' : '#f44336';
-}
-
-// Form validation and submission
-document.querySelector('.auth-form').addEventListener('submit', function(e) {
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    const loginBtn = document.getElementById('login-btn');
-    const btnText = loginBtn.querySelector('.btn-text');
-    const spinner = loginBtn.querySelector('.btn-spinner');
-    
-    // Validate phone number
-    if (!/^\d{10}$/.test(phone)) {
-        e.preventDefault();
-        alert('Please enter a valid 10-digit mobile number');
-        document.getElementById('phone').focus();
-        document.getElementById('phone').style.borderColor = '#f44336';
-        return;
-    }
-    
-    // Validate password length
-    if (password.length < 8) {
-        e.preventDefault();
-        alert('Password must be at least 8 characters long');
-        document.getElementById('password').focus();
-        return;
-    }
-    
-    // Show loading state
-    btnText.textContent = 'Logging in...';
-    spinner.style.display = 'inline-block';
-    loginBtn.disabled = true;
-});
-</script>
-
-<style>
-/* Professional Minimal Styling */
-.auth-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.auth-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    padding: 40px;
-    width: 100%;
-    max-width: 400px;
-}
-
-.auth-title {
-    font-size: 28px;
-    font-weight: 600;
-    color: #333;
-    text-align: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
-}
-
-/* Form Styles */
-.form-group {
-    margin-bottom: 25px;
-}
-
-.form-label {
-    display: block;
-    font-weight: 500;
-    color: #555;
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-
-.input-with-country {
-    display: flex;
-    align-items: center;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: border-color 0.3s;
-}
-
-.input-with-country:focus-within {
-    border-color: #667eea;
-}
-
-.country-code {
-    padding: 12px 16px;
-    background: #f5f5f5;
-    color: #666;
-    font-weight: 500;
-    border-right: 2px solid #e0e0e0;
-}
-
-.form-control {
-    flex: 1;
-    border: none;
-    padding: 12px 16px;
-    font-size: 15px;
-    outline: none;
-    color: #333;
-}
-
-.form-control::placeholder {
-    color: #999;
-}
-
-.password-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    transition: border-color 0.3s;
-}
-
-.password-input-wrapper:focus-within {
-    border-color: #667eea;
-}
-
-.password-toggle-btn {
-    background: none;
-    border: none;
-    padding: 12px 16px;
-    color: #777;
-    cursor: pointer;
-    transition: color 0.2s;
-    outline: none;
-}
-
-.password-toggle-btn:hover {
-    color: #333;
-}
-
-.password-toggle-btn:focus {
-    outline: 2px solid #667eea;
-    border-radius: 4px;
-}
-
-/* Button Styles */
-.btn {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-}
-
-.btn-primary:active {
-    transform: translateY(0);
-}
-
-.btn-primary:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.btn-spinner {
-    display: none;
-    margin-left: 10px;
-}
-
-/* Footer Styles */
-.auth-footer {
-    text-align: center;
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-    color: #666;
-    font-size: 14px;
-}
-
-.auth-footer a {
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s;
-}
-
-.auth-footer a:hover {
-    color: #764ba2;
-    text-decoration: underline;
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-    .auth-card {
-        padding: 30px 20px;
-        margin: 20px;
-    }
-    
-    .auth-title {
-        font-size: 24px;
-    }
-}
-
-/* Focus states for accessibility */
-.form-control:focus,
-.password-toggle-btn:focus,
-.btn:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-</style>
 {% endblock %}
