@@ -1,0 +1,734 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="dashboard instagram-profile">
+    <!-- Top Header (Instagram Style Compact) -->
+    <header class="dashboard-header insta-compact">
+        <div class="header-left">
+            <h1>Profile</h1>
+        </div>
+        <div class="header-right">
+            <img src="{{ url_for('static', filename='uploads/' + session.profile_pic) }}" 
+                 alt="Profile" class="profile-pic compact"
+                 onerror="this.src='{{ url_for('static', filename='default-avatar.jpg') }}'">
+        </div>
+    </header>
+
+    <!-- Instagram Style Profile Content -->
+    <main class="main-content instagram-style compact-view">
+        <div class="profile-header-section insta-style">
+            <div class="profile-avatar-container compact-avatar">
+                <div class="profile-avatar-wrapper insta-avatar">
+                    <img src="{{ url_for('static', filename='uploads/' + session.profile_pic) }}" 
+                         alt="Profile" class="profile-avatar insta-img"
+                         onerror="this.src='{{ url_for('static', filename='default-avatar.jpg') }}'">
+                    <label for="profile_pic" class="avatar-edit-overlay insta-edit">
+                        <i class="fas fa-camera"></i>
+                    </label>
+                </div>
+                <p class="profile-role insta-role">
+                    <i class="fas fa-user-tag"></i>
+                    Customer
+                </p>
+            </div>
+            
+            <div class="profile-info insta-info">
+                <div class="profile-name-section">
+                    <h2 class="profile-name insta-name">{{ session.full_name }}</h2>
+                    <button type="button" class="insta-edit-btn">Edit Profile</button>
+                </div>
+                
+                <!-- User Details - Compact Instagram Style -->
+                <div class="insta-details">
+                    <div class="insta-detail-item">
+                        <i class="fas fa-envelope insta-icon"></i>
+                        <span class="insta-detail-text">{{ session.email|truncate(20) }}</span>
+                    </div>
+                    <div class="insta-detail-item">
+                        <i class="fas fa-phone insta-icon"></i>
+                        <span class="insta-detail-text">{{ session.phone or 'Phone not set' }}</span>
+                    </div>
+                    <div class="insta-detail-item">
+                        <i class="fas fa-calendar insta-icon"></i>
+                        <span class="insta-detail-text">{{ session.get('created_at', 'N/A') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instagram Style Tabs -->
+        <div class="insta-tabs">
+            <button class="insta-tab active">
+                <i class="fas fa-user-edit"></i>
+                <span>Edit Profile</span>
+            </button>
+            <button class="insta-tab" onclick="window.location.href='{{ url_for('services') }}'">
+                <i class="fas fa-concierge-bell"></i>
+                <span>Services</span>
+            </button>
+            <button class="insta-tab" onclick="window.location.href='{{ url_for('logout') }}'">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+
+        <!-- Edit Profile Form (Initially Hidden) -->
+        <form method="POST" enctype="multipart/form-data" class="profile-edit-form insta-form" id="editForm">
+            <input type="file" id="profile_pic" name="profile_pic" accept="image/*" hidden>
+            
+            <!-- Personal Info -->
+            <div class="insta-form-section">
+                <div class="insta-form-row">
+                    <div class="insta-input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="full_name" 
+                               value="{{ session.full_name }}" 
+                               class="insta-input"
+                               placeholder="Full Name"
+                               required>
+                    </div>
+                </div>
+                
+                <div class="insta-form-row">
+                    <div class="insta-input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" 
+                               value="{{ session.email }}" 
+                               class="insta-input"
+                               placeholder="Email Address"
+                               required>
+                    </div>
+                </div>
+                
+                <div class="insta-form-row">
+                    <div class="insta-input-group">
+                        <i class="fas fa-phone"></i>
+                        <input type="text" name="phone" 
+                               value="{{ session.phone }}" 
+                               class="insta-input"
+                               placeholder="Phone Number">
+                    </div>
+                </div>
+                
+                <!-- Location Field - Only in Edit Form -->
+                <div class="insta-form-row">
+                    <div class="insta-input-group">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" name="location" 
+                               value="{{ session.location }}" 
+                               class="insta-input"
+                               placeholder="Your Location">
+                        <button type="button" class="insta-location-btn" onclick="getLocation()" title="Use current location">
+                            <i class="fas fa-location-crosshairs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change -->
+            <div class="insta-form-section">
+                <h4 class="insta-form-title">Change Password</h4>
+                <div class="insta-form-row">
+                    <div class="insta-input-group">
+                        <i class="fas fa-key"></i>
+                        <input type="password" name="new_password" 
+                               class="insta-input"
+                               placeholder="New Password (optional)"
+                               minlength="6">
+                        <button type="button" class="insta-password-toggle" onclick="togglePassword(this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="insta-form-row">
+                    <div class="insta-input-group">
+                        <i class="fas fa-key"></i>
+                        <input type="password" name="confirm_password" 
+                               class="insta-input"
+                               placeholder="Confirm Password"
+                               minlength="6">
+                        <button type="button" class="insta-password-toggle" onclick="togglePassword(this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="insta-form-actions">
+                <button type="button" class="insta-cancel-btn" onclick="hideEditForm()">
+                    Cancel
+                </button>
+                <button type="submit" class="insta-save-btn">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+
+        <!-- Quick Actions -->
+        <div class="insta-quick-actions">
+            <a href="{{ url_for('dashboard') }}" class="insta-action-btn">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('menu') }}" class="insta-action-btn">
+                <i class="fas fa-utensils"></i>
+                <span>Menu</span>
+            </a>
+            <a href="{{ url_for('cart') }}" class="insta-action-btn">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
+            </a>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation - ORIGINAL FROM FIRST VERSION -->
+    <nav class="bottom-nav">
+        <a href="{{ url_for('services') }}" class="nav-item">
+            <i class="fas fa-concierge-bell"></i>
+            <span>Services</span>
+        </a>
+        <a href="{{ url_for('menu') }}" class="nav-item">
+            <i class="fas fa-utensils"></i>
+            <span>Menu</span>
+        </a>
+        <a href="{{ url_for('cart') }}" class="nav-item">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Cart</span>
+        </a>
+        <a href="{{ url_for('order_history') }}" class="nav-item">
+            <i class="fas fa-history"></i>
+            <span>Orders</span>
+        </a>
+        <a href="{{ url_for('profile') }}" class="nav-item active">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+</div>
+
+<style>
+/* Instagram Compact Style */
+.instagram-profile {
+    background: #fafafa;
+    max-width: 500px;
+    margin: 0 auto;
+    padding-bottom: 80px; /* Space for bottom nav */
+}
+
+/* Compact Header */
+.dashboard-header.insta-compact {
+    padding: 12px 16px;
+    border-bottom: 1px solid #dbdbdb;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 44px;
+}
+
+.dashboard-header.insta-compact h1 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    color: #262626;
+}
+
+.profile-pic.compact {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #dbdbdb;
+}
+
+/* Profile Header Section */
+.profile-header-section.insta-style {
+    background: white;
+    padding: 16px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    border-bottom: 1px solid #dbdbdb;
+}
+
+/* Compact Avatar */
+.profile-avatar-container.compact-avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 70px;
+}
+
+.profile-avatar-wrapper.insta-avatar {
+    width: 70px;
+    height: 70px;
+    position: relative;
+}
+
+.profile-avatar.insta-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.avatar-edit-overlay.insta-edit {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: #0095f6;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    border: 2px solid white;
+    font-size: 10px;
+}
+
+.profile-role.insta-role {
+    font-size: 11px;
+    color: #8e8e8e;
+    background: transparent;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid #dbdbdb;
+    margin: 0;
+}
+
+/* Profile Info */
+.profile-info.insta-info {
+    flex: 1;
+}
+
+.profile-name-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.profile-name.insta-name {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: #262626;
+}
+
+.insta-edit-btn {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #262626;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.insta-edit-btn:hover {
+    background: #fafafa;
+}
+
+/* Instagram Details */
+.insta-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.insta-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.insta-icon {
+    width: 14px;
+    font-size: 12px;
+    color: #8e8e8e;
+    text-align: center;
+}
+
+.insta-detail-text {
+    font-size: 13px;
+    color: #262626;
+    line-height: 1.4;
+}
+
+/* Instagram Tabs */
+.insta-tabs {
+    display: flex;
+    background: white;
+    border-bottom: 1px solid #dbdbdb;
+    padding: 0 4px;
+}
+
+.insta-tab {
+    flex: 1;
+    padding: 12px 8px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 12px;
+    color: #8e8e8e;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.insta-tab i {
+    font-size: 14px;
+}
+
+.insta-tab.active {
+    color: #0095f6;
+    border-bottom-color: #0095f6;
+}
+
+.insta-tab:hover:not(.active) {
+    background: #fafafa;
+}
+
+/* Instagram Form */
+.profile-edit-form.insta-form {
+    background: white;
+    padding: 16px;
+    display: none;
+}
+
+.insta-form-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #efefef;
+}
+
+.insta-form-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #262626;
+    margin: 0 0 12px 0;
+}
+
+.insta-form-row {
+    margin-bottom: 12px;
+}
+
+.insta-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.insta-input-group i {
+    position: absolute;
+    left: 12px;
+    color: #8e8e8e;
+    font-size: 14px;
+}
+
+.insta-input {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #262626;
+    background: #fafafa;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.insta-input:focus {
+    border-color: #0095f6;
+    background: white;
+}
+
+.insta-location-btn,
+.insta-password-toggle {
+    position: absolute;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #8e8e8e;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.insta-location-btn:hover,
+.insta-password-toggle:hover {
+    color: #0095f6;
+}
+
+/* Form Actions */
+.insta-form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.insta-cancel-btn {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #262626;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.insta-save-btn {
+    flex: 1;
+    padding: 10px;
+    background: #0095f6;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.insta-cancel-btn:hover {
+    background: #fafafa;
+}
+
+.insta-save-btn:hover {
+    background: #0074cc;
+}
+
+/* Quick Actions */
+.insta-quick-actions {
+    display: flex;
+    gap: 8px;
+    padding: 16px;
+    background: white;
+    border-top: 1px solid #dbdbdb;
+}
+
+.insta-action-btn {
+    flex: 1;
+    padding: 10px;
+    background: #fafafa;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #262626;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.insta-action-btn i {
+    font-size: 12px;
+}
+
+.insta-action-btn:hover {
+    background: #f0f0f0;
+}
+
+/* Bottom Navigation - ORIGINAL STYLES FROM FIRST VERSION */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #dbdbdb;
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+    z-index: 1000;
+}
+
+.bottom-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #8e8e8e;
+    font-size: 20px;
+    padding: 4px;
+}
+
+.bottom-nav .nav-item i {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.bottom-nav .nav-item span {
+    font-size: 10px;
+}
+
+.bottom-nav .nav-item.active {
+    color: #0095f6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .instagram-profile {
+        max-width: 100%;
+    }
+    
+    .profile-header-section.insta-style {
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .profile-avatar-wrapper.insta-avatar {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .profile-name.insta-name {
+        font-size: 16px;
+    }
+    
+    .insta-tab span {
+        display: none;
+    }
+    
+    .insta-tab i {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header.insta-compact h1 {
+        font-size: 16px;
+    }
+    
+    .profile-avatar-wrapper.insta-avatar {
+        width: 56px;
+        height: 56px;
+    }
+    
+    .avatar-edit-overlay.insta-edit {
+        width: 20px;
+        height: 20px;
+        font-size: 8px;
+    }
+    
+    .insta-detail-text {
+        font-size: 12px;
+    }
+    
+    .bottom-nav .nav-item i {
+        font-size: 18px;
+    }
+}
+</style>
+
+<script>
+// Show/hide edit form
+document.querySelector('.insta-edit-btn').addEventListener('click', function() {
+    document.getElementById('editForm').style.display = 'block';
+    document.querySelector('.insta-tabs .active').classList.remove('active');
+    document.querySelector('.insta-tabs button:first-child').classList.add('active');
+});
+
+function hideEditForm() {
+    document.getElementById('editForm').style.display = 'none';
+}
+
+// Tab switching
+document.querySelectorAll('.insta-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        if (this.querySelector('i').classList.contains('fa-user-edit')) {
+            document.getElementById('editForm').style.display = 'block';
+        } else {
+            document.getElementById('editForm').style.display = 'none';
+        }
+        
+        document.querySelectorAll('.insta-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function() {
+        document.querySelector('.profile-avatar').src = reader.result;
+        document.querySelector('.profile-pic').src = reader.result;
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+
+function togglePassword(button) {
+    const input = button.parentElement.querySelector('input');
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+function getLocation() {
+    if (!navigator.geolocation) {
+        alert('Geolocation not supported');
+        return;
+    }
+    
+    const locationInput = document.querySelector('input[name="location"]');
+    const originalPlaceholder = locationInput.placeholder;
+    locationInput.placeholder = 'Getting location...';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    locationInput.value = data.display_name || `${lat}, ${lon}`;
+                    locationInput.placeholder = originalPlaceholder;
+                })
+                .catch(() => {
+                    locationInput.value = `${lat}, ${lon}`;
+                    locationInput.placeholder = originalPlaceholder;
+                });
+        },
+        function() {
+            alert('Unable to get location');
+            locationInput.placeholder = originalPlaceholder;
+        }
+    );
+}
+
+// Trigger file input when clicking on avatar edit
+document.querySelector('.avatar-edit-overlay').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('profile_pic').click();
+});
+
+document.getElementById('profile_pic').addEventListener('change', previewImage);
+</script>
+{% endblock %}
