@@ -2,10 +2,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithPhoneNumber, RecaptchaVerifier } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBmZG2Xi5WNXsEbY1gj4MQ6PKnS0gu1S4s",
+  authDomain: "bite-me-buddy.firebaseapp.com",
+  projectId: "bite-me-buddy",
+  appId: "1:387282094580:web:422e09cff55a0ed47bd1a1"
 };
 
 const app = initializeApp(firebaseConfig);
