@@ -14,6 +14,7 @@
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
+        /* New: Full page gradient background */
         body {
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 25%, #fae8ff 50%, #fefce8 75%, #f0fdf4 100%);
             min-height: 100vh;
@@ -25,6 +26,7 @@
             overflow-x: hidden;
         }
 
+        /* New: Animated background elements */
         body::before {
             content: '';
             position: fixed;
@@ -40,6 +42,7 @@
             animation: float 20s ease-in-out infinite;
         }
 
+        /* New: Floating animation for background */
         @keyframes float {
             0%, 100% {
                 transform: translate(0, 0) rotate(0deg);
@@ -58,6 +61,7 @@
             animation: slideUp 0.5s ease-out;
         }
 
+        /* New: Container animation */
         @keyframes slideUp {
             from {
                 opacity: 0;
@@ -83,6 +87,7 @@
             overflow: hidden;
         }
 
+        /* New: Decorative corner accent */
         .auth-card::before {
             content: '';
             position: absolute;
@@ -107,7 +112,7 @@
             background-clip: text;
         }
 
-        /* Form Elements */
+        /* Rest of your existing styles remain exactly the same */
         .form-group {
             margin-bottom: 24px;
         }
@@ -142,7 +147,7 @@
             color: #94a3b8;
         }
 
-        /* Profile Upload */
+        /* Professional Profile Upload Section */
         .profile-upload {
             text-align: center;
             margin-bottom: 32px;
@@ -175,6 +180,7 @@
             transform: scale(1.02);
         }
 
+        /* Camera Icon - Simple and Clean */
         .camera-icon {
             color: #94a3b8;
             font-size: 32px;
@@ -193,6 +199,7 @@
             margin-bottom: 8px;
         }
 
+        /* File Browser Option */
         .file-browser-option {
             display: inline-flex;
             align-items: center;
@@ -217,10 +224,19 @@
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
         }
 
+        .file-browser-option:active {
+            transform: translateY(0);
+        }
+
+        .file-browser-option i {
+            font-size: 16px;
+        }
+
         .profile-upload input[type="file"] {
             display: none;
         }
 
+        /* Preview Image Styling */
         #imagePreview {
             width: 140px;
             height: 140px;
@@ -305,6 +321,10 @@
             color: #3b82f6;
         }
 
+        .location-btn i {
+            font-size: 14px;
+        }
+
         .help-text {
             display: block;
             margin-top: 6px;
@@ -329,10 +349,6 @@
             letter-spacing: 0.3px;
             position: relative;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
 
         .btn-primary::before {
@@ -350,14 +366,13 @@
             left: 100%;
         }
 
-        .btn-primary:hover:not(:disabled) {
+        .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
         }
 
-        .btn-primary:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
         /* Auth Footer */
@@ -383,61 +398,16 @@
             text-decoration: underline;
         }
 
-        /* Messages */
-        .message {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 500;
-            display: none;
-        }
-
-        .message.success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-            display: block;
-        }
-
-        .message.error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-            display: block;
-        }
-
-        /* Loading Spinner */
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Form Validation */
-        .form-group input.error {
+        /* Form Validation Styles */
+        .form-group input:invalid:not(:focus):not(:placeholder-shown) {
             border-color: #ef4444;
         }
 
-        .form-group input.success {
+        .form-group input:valid:not(:focus):not(:placeholder-shown) {
             border-color: #10b981;
         }
 
-        .error-text {
-            color: #ef4444;
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
-        }
-
+        /* Responsive Design */
         @media (max-width: 576px) {
             .auth-card {
                 padding: 24px;
@@ -481,15 +451,7 @@
     <div class="auth-container">  
         <div class="auth-card">  
             <h1 class="auth-title">Create Account</h1>  
-            
-            <!-- Messages Container -->
-            <div id="messageContainer"></div>
-            
-            <!-- Registration Form -->
-            <form id="registerForm" class="auth-form">  
-                <!-- CSRF Token (for production) -->
-                <input type="hidden" id="csrf_token" name="csrf_token" value="">
-                
+            <form method="POST" enctype="multipart/form-data" class="auth-form">  
                 <div class="form-group">  
                     <label for="profile_pic">Profile Picture</label>  
                     <div class="profile-upload">  
@@ -501,7 +463,7 @@
                             <div class="upload-text">Add photo</div>
                         </div>
                         
-                        <!-- Image Preview -->
+                        <!-- Image Preview (hidden by default) -->
                         <img id="imagePreview" alt="Profile Preview">
                         
                         <!-- Browse Files Option -->
@@ -509,132 +471,60 @@
                             <i class="fas fa-folder-open"></i> Browse Files
                         </a>
                         
-                        <input type="file" id="profile_pic" name="profile_pic" accept="image/*" onchange="previewImage(event)">
-                        <div class="error-text" id="profilePicError"></div>
+                        <input type="file" id="profile_pic" name="profile_pic" accept="image/*" onchange="previewImage(event)">  
                     </div>  
                 </div>  
                   
                 <div class="form-group">  
                     <label for="full_name">Full Name</label>  
-                    <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name">
-                    <div class="error-text" id="fullNameError"></div>
+                    <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name">  
                 </div>  
                   
                 <div class="form-group">  
                     <label for="phone">Mobile Number</label>  
-                    <input type="tel" id="phone" name="phone" required pattern="[0-9]{10,15}" placeholder="Enter 10-digit mobile number">
-                    <div class="error-text" id="phoneError"></div>
+                    <input type="tel" id="phone" name="phone" required pattern="[0-9]{10,15}" placeholder="Enter 10-digit mobile number">  
                 </div>  
                   
                 <div class="form-group">  
                     <label for="email">Email Address</label>  
-                    <input type="email" id="email" name="email" required placeholder="Enter your email address">
-                    <div class="error-text" id="emailError"></div>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email address">  
                 </div>  
                   
                 <div class="form-group">  
                     <label for="location">Location</label>  
                     <div class="location-input">  
-                        <input type="text" id="location" name="location" required placeholder="Enter your location">
+                        <input type="text" id="location" name="location" required placeholder="Enter your location">  
                         <button type="button" class="location-btn" onclick="getLocation()" id="locationBtn">  
                             <i class="fas fa-location-crosshairs"></i> 
                             <span>Live Location</span>
                         </button>  
                     </div>  
-                    <small id="locationHelp" class="help-text"></small>
-                    <div class="error-text" id="locationError"></div>
+                    <small id="locationHelp" class="help-text"></small>  
                 </div>  
                   
                 <div class="form-group">  
                     <label for="password">Password</label>  
-                    <input type="password" id="password" name="password" required minlength="6" placeholder="Create a password (min. 6 characters)">
-                    <div class="error-text" id="passwordError"></div>
+                    <input type="password" id="password" name="password" required minlength="6" placeholder="Create a password (min. 6 characters)">  
                 </div>  
                   
                 <div class="form-group">  
                     <label for="confirm_password">Confirm Password</label>  
-                    <input type="password" id="confirm_password" name="confirm_password" required minlength="6" placeholder="Re-enter your password">
-                    <div class="error-text" id="confirmPasswordError"></div>
+                    <input type="password" id="confirm_password" name="confirm_password" required minlength="6" placeholder="Re-enter your password">  
                 </div>  
                   
-                <button type="submit" class="btn-primary" id="submitBtn">
-                    <span id="btnText">Register</span>
-                    <div class="spinner" id="loadingSpinner" style="display: none;"></div>
-                </button>  
+                <button type="submit" class="btn-primary">Register</button>  
                   
                 <div class="auth-footer">  
-                    Already have an account? <a href="/login">Login</a>  
+                    Already have an account? <a href="{{ url_for('login') }}">Login</a>  
                 </div>  
             </form>  
         </div>
     </div>
 
-    <script>
-    // Global variables
-    let isSubmitting = false;
-    
-    // Show message function
-    function showMessage(message, type = 'error') {
-        const container = document.getElementById('messageContainer');
-        container.innerHTML = `
-            <div class="message ${type}">
-                ${message}
-            </div>
-        `;
-        
-        if (type === 'success') {
-            setTimeout(() => container.innerHTML = '', 3000);
-        }
-    }
-    
-    // Show error for specific field
-    function showError(fieldId, message) {
-        const errorEl = document.getElementById(fieldId);
-        const inputEl = document.getElementById(fieldId.replace('Error', ''));
-        
-        if (errorEl && inputEl) {
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-            inputEl.classList.add('error');
-            inputEl.classList.remove('success');
-        }
-    }
-    
-    // Clear all errors
-    function clearErrors() {
-        document.querySelectorAll('.error-text').forEach(el => {
-            el.style.display = 'none';
-            el.textContent = '';
-        });
-        
-        document.querySelectorAll('input').forEach(el => {
-            el.classList.remove('error', 'success');
-        });
-    }
-    
-    // Preview image function
+    <script>  
     function previewImage(event) {  
         const file = event.target.files[0];
         if (!file) return;
-        
-        // Validate file type and size (max 5MB)
-        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        
-        if (!validTypes.includes(file.type)) {
-            showError('profilePicError', 'Please upload a valid image (JPEG, PNG, GIF, WebP)');
-            event.target.value = '';
-            return;
-        }
-        
-        if (file.size > maxSize) {
-            showError('profilePicError', 'Image size should be less than 5MB');
-            event.target.value = '';
-            return;
-        }
-        
-        // Clear error if valid
-        showError('profilePicError', '');
         
         const reader = new FileReader();  
         reader.onload = function() {  
@@ -652,35 +542,59 @@
                 overlay.innerHTML = '<div class="change-icon"><i class="fas fa-camera"></i></div>';
                 preview.appendChild(overlay);
                 
+                // Make overlay clickable
                 overlay.addEventListener('click', function(e) {
                     e.stopPropagation();
                     document.getElementById('profile_pic').click();
                 });
             }
             
+            // Make preview clickable
             preview.addEventListener('click', function(e) {
                 if (!e.target.closest('.change-overlay')) {
                     document.getElementById('profile_pic').click();
                 }
             });
             
+            // Update browse files option
             document.querySelector('.file-browser-option').innerHTML = '<i class="fas fa-sync-alt"></i> Change Photo';
         };
         
         reader.readAsDataURL(file);
     }
-    
-    // Get location function
+      
+    // Click handlers
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadContainer = document.getElementById('uploadContainer');
+        const fileInput = document.getElementById('profile_pic');
+        const fileBrowserOption = document.querySelector('.file-browser-option');
+        
+        if (uploadContainer) {
+            uploadContainer.addEventListener('click', function(e) {
+                e.preventDefault();
+                fileInput.click();
+            });
+        }
+        
+        if (fileBrowserOption) {
+            fileBrowserOption.addEventListener('click', function(e) {
+                e.preventDefault();
+                fileInput.click();
+            });
+        }
+    });
+
     function getLocation() {  
         const locationBtn = document.getElementById('locationBtn');
         const locationHelp = document.getElementById('locationHelp');
         const locationInput = document.getElementById('location');
         
         if (!navigator.geolocation) {  
-            showError('locationError', 'Geolocation not supported by your browser');
+            locationHelp.textContent = 'Geolocation not supported by your browser';  
             return;  
         }  
         
+        // Show loading state
         const originalHTML = locationBtn.innerHTML;
         locationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Getting location...</span>';
         locationBtn.disabled = true;
@@ -692,6 +606,7 @@
                 const lat = position.coords.latitude;  
                 const lon = position.coords.longitude;  
                 
+                // Reverse geocoding using Nominatim (OpenStreetMap)  
                 fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)  
                     .then(response => response.json())  
                     .then(data => {  
@@ -699,15 +614,11 @@
                         locationInput.value = address;  
                         locationHelp.textContent = 'Location detected successfully!';  
                         locationHelp.style.color = '#10b981';
-                        showError('locationError', '');
-                        locationInput.classList.add('success');
                     })  
                     .catch(() => {  
                         locationInput.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;  
                         locationHelp.textContent = 'Coordinates saved';  
                         locationHelp.style.color = '#10b981';
-                        showError('locationError', '');
-                        locationInput.classList.add('success');
                     })  
                     .finally(() => {
                         locationBtn.innerHTML = originalHTML;
@@ -731,209 +642,34 @@
                 }  
                 locationHelp.textContent = message;  
                 locationHelp.style.color = '#ef4444';
-                showError('locationError', message);
                 locationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i><span>Retry Location</span>';
                 locationBtn.disabled = false;
             }  
         );  
     }
     
-    // Validate form
-    function validateForm() {
-        let isValid = true;
-        clearErrors();
-        
-        // Full Name validation
-        const fullName = document.getElementById('full_name').value.trim();
-        if (!fullName || fullName.length < 2) {
-            showError('fullNameError', 'Please enter a valid full name');
-            isValid = false;
-        }
-        
-        // Phone validation
-        const phone = document.getElementById('phone').value.trim();
-        const phoneRegex = /^[0-9]{10,15}$/;
-        if (!phoneRegex.test(phone)) {
-            showError('phoneError', 'Please enter a valid 10-15 digit phone number');
-            isValid = false;
-        }
-        
-        // Email validation
-        const email = document.getElementById('email').value.trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            showError('emailError', 'Please enter a valid email address');
-            isValid = false;
-        }
-        
-        // Location validation
-        const location = document.getElementById('location').value.trim();
-        if (!location) {
-            showError('locationError', 'Please enter your location');
-            isValid = false;
-        }
-        
-        // Password validation
-        const password = document.getElementById('password').value;
-        if (password.length < 6) {
-            showError('passwordError', 'Password must be at least 6 characters');
-            isValid = false;
-        }
-        
-        // Confirm password validation
-        const confirmPassword = document.getElementById('confirm_password').value;
-        if (password !== confirmPassword) {
-            showError('confirmPasswordError', 'Passwords do not match');
-            isValid = false;
-        }
-        
-        return isValid;
-    }
-    
-    // Form submission handler
-    document.getElementById('registerForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        if (isSubmitting) return;
-        
-        // Validate form
-        if (!validateForm()) {
-            return;
-        }
-        
-        // Disable form and show loading
-        isSubmitting = true;
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const spinner = document.getElementById('loadingSpinner');
-        
-        submitBtn.disabled = true;
-        btnText.textContent = 'Creating Account...';
-        spinner.style.display = 'block';
-        
-        try {
-            // Create FormData
-            const formData = new FormData(this);
-            
-            // Add additional data if needed
-            formData.append('registration_date', new Date().toISOString());
-            
-            // Send to backend API
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                body: formData
-                // Note: Don't set Content-Type header for FormData
-                // Browser sets it automatically with boundary
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                // Show success message
-                showMessage('Registration successful! Redirecting to dashboard...', 'success');
-                
-                // Reset form
-                this.reset();
-                
-                // Reset image preview
-                const preview = document.getElementById('imagePreview');
-                preview.classList.remove('has-image');
-                preview.src = '';
-                document.getElementById('uploadContainer').style.display = 'block';
-                document.querySelector('.file-browser-option').innerHTML = '<i class="fas fa-folder-open"></i> Browse Files';
-                
-                // Redirect to dashboard after 2 seconds
-                setTimeout(() => {
-                    window.location.href = result.redirectUrl || '/dashboard';
-                }, 2000);
-                
-            } else {
-                // Show error from server
-                showMessage(result.message || 'Registration failed. Please try again.');
-                
-                // Highlight specific field errors if provided
-                if (result.errors) {
-                    Object.keys(result.errors).forEach(field => {
-                        showError(`${field}Error`, result.errors[field]);
-                    });
-                }
-            }
-            
-        } catch (error) {
-            console.error('Registration error:', error);
-            showMessage('Network error. Please check your connection and try again.');
-            
-        } finally {
-            // Re-enable form
-            isSubmitting = false;
-            submitBtn.disabled = false;
-            btnText.textContent = 'Register';
-            spinner.style.display = 'none';
-        }
-    });
-    
-    // Real-time validation
-    document.querySelectorAll('input').forEach(input => {
-        input.addEventListener('blur', function() {
-            if (this.value.trim()) {
-                this.classList.add('success');
-                this.classList.remove('error');
-            }
-        });
-    });
-    
-    // Phone number formatting
-    document.getElementById('phone').addEventListener('input', function() {
-        this.value = this.value.replace(/\D/g, '');
-        showError('phoneError', '');
-    });
-    
-    // Password match validation
-    document.getElementById('confirm_password').addEventListener('input', function() {
-        const password = document.getElementById('password').value;
-        const confirmPassword = this.value;
-        
-        if (confirmPassword && password !== confirmPassword) {
-            showError('confirmPasswordError', 'Passwords do not match');
-        } else if (confirmPassword) {
-            showError('confirmPasswordError', '');
-            this.classList.add('success');
-        }
-    });
-    
-    // Click handlers for profile upload
+    // Form validation
     document.addEventListener('DOMContentLoaded', function() {
-        const uploadContainer = document.getElementById('uploadContainer');
-        const fileInput = document.getElementById('profile_pic');
-        const fileBrowserOption = document.querySelector('.file-browser-option');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
         
-        if (uploadContainer) {
-            uploadContainer.addEventListener('click', function(e) {
-                e.preventDefault();
-                fileInput.click();
+        if (confirmPassword) {
+            confirmPassword.addEventListener('input', function() {
+                if (password.value !== confirmPassword.value) {
+                    confirmPassword.style.borderColor = '#ef4444';
+                } else {
+                    confirmPassword.style.borderColor = '#10b981';
+                }
             });
         }
         
-        if (fileBrowserOption) {
-            fileBrowserOption.addEventListener('click', function(e) {
-                e.preventDefault();
-                fileInput.click();
+        // Phone number validation
+        const phoneInput = document.getElementById('phone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '');
             });
         }
-        
-        // Fetch CSRF token if needed (for production)
-        // fetch('/api/csrf-token').then(res => res.json()).then(data => {
-        //     document.getElementById('csrf_token').value = data.token;
-        // });
-    });
-    
-    // Prevent form submission on Enter key in certain fields
-    document.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"]').forEach(input => {
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
-        });
     });
     </script>
 </body>
