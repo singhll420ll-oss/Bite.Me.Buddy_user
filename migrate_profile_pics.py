@@ -5,8 +5,6 @@ import psycopg
 from psycopg.rows import dict_row
 import cloudinary
 import cloudinary.uploader
-from PIL import Image
-import io
 
 # Cloudinary Configuration
 cloudinary.config(
@@ -21,6 +19,7 @@ def get_db_connection():
     if not database_url:
         raise ValueError("DATABASE_URL environment variable is not set")
     
+    # psycopg requires postgresql:// instead of postgres://
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     
@@ -57,17 +56,20 @@ def migrate_existing_users():
             
             if os.path.exists(filepath):
                 try:
-                    # Upload to Cloudinary
+                    # Upload to Cloudinary with fixed transformation
                     with open(filepath, 'rb') as f:
                         result = cloudinary.uploader.upload(
                             f,
                             folder="profile_pics",
                             public_id=f"user_migrated_{user_id}",
                             overwrite=True,
-                            transformation=[
-                                {'width': 500, 'height': 500, 'crop': 'fill'},
-                                {'quality': 'auto'}
-                            ]
+                            transformation={
+                                'width': 500,
+                                'height': 500,
+                                'crop': 'fill',
+                                'quality': 'auto',
+                                'fetch_format': 'auto'
+                            }
                         )
                     
                     # Update database with Cloudinary URL
@@ -75,9 +77,6 @@ def migrate_existing_users():
                         "UPDATE users SET profile_pic = %s WHERE id = %s",
                         (result["secure_url"], user_id)
                     )
-                    
-                    # Delete local file (optional)
-                    # os.remove(filepath)
                     
                     print(f"✓ Migrated user {user_id}: {old_pic} → Cloudinary")
                     migrated_count += 1
