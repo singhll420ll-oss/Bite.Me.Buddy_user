@@ -227,15 +227,6 @@ pip install --upgrade pip
 echo "Installing dependencies..."
 pip install -r requirements.txt
 
-# Initialize database (create tables)
-echo "Initializing database..."
-if [ -f "init_db.py" ]; then
-    python init_db.py
-else
-    echo "Warning: init_db.py not found. Database tables need to be created manually."
-    echo "Run the SQL commands from schema.sql in your PostgreSQL database."
-fi
-
 # Set permissions
 chmod -R 755 static/uploads
 
