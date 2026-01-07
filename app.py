@@ -9,12 +9,31 @@ import psycopg
 from psycopg.rows import dict_row
 import base64
 import io
+# ✅ CLOUDINARY IMPORT ADDED
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api  # ✅ ADDED FOR FETCHING
 
 app = Flask(__name__, 
     template_folder='templates',  # ✅ Explicit template folder
     static_folder='static'        # ✅ Explicit static folder
 )
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# ✅ CLOUDINARY CONFIGURATION ADDED
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
+    secure=True
+)
+
+# Default avatar URL (Cloudinary pe upload karna hoga)
+DEFAULT_AVATAR_URL = "https://res.cloudinary.com/demo/image/upload/v1234567890/profile_pics/default-avatar.png"
+
+# ✅ CLOUDINARY FOLDERS FOR SERVICES AND MENU
+SERVICES_FOLDER = "services"
+MENU_FOLDER = "menu_items"
 
 # Configuration
 UPLOAD_FOLDER = 'static/uploads'
@@ -83,21 +102,31 @@ def register():
         if len(password) < 6:
             errors.append('Password must be at least 6 characters')
         
-        # Handle profile picture
-        profile_pic = 'default-avatar.jpg'
+        # ✅ CLOUDINARY PROFILE PICTURE HANDLING - UPDATED
+        profile_pic = DEFAULT_AVATAR_URL
+        
         if 'profile_pic' in request.files:
             file = request.files['profile_pic']
             if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Generate unique filename
-                ext = filename.rsplit('.', 1)[1].lower()
-                unique_filename = f"{secrets.token_hex(8)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
-                
-                # Save file (without PIL resize)
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                file.save(filepath)
-                
-                profile_pic = unique_filename
+                try:
+                    # ✅ Upload to Cloudinary
+                    result = cloudinary.uploader.upload(
+                        file,
+                        folder="profile_pics",
+                        public_id=f"user_{secrets.token_hex(8)}",
+                        overwrite=True,
+                        transformation=[
+                            {'width': 500, 'height': 500, 'crop': 'fill'},
+                            {'quality': 'auto', 'fetch_format': 'auto'}
+                        ]
+                    )
+                    profile_pic = result["secure_url"]
+                    
+                except Exception as e:
+                    flash(f'Profile photo upload failed: {str(e)}', 'warning')
+                    # Fallback to default avatar
+                    profile_pic = DEFAULT_AVATAR_URL
+                    
             elif file and file.filename:
                 errors.append('Invalid file type. Allowed: png, jpg, jpeg, gif')
         
@@ -143,6 +172,9 @@ def register():
                     session['location'] = location
                     session['profile_pic'] = profile_pic
                     
+                    # ALSO SET created_at IN SESSION FOR NEW USER
+                    session['created_at'] = datetime.now().strftime('%d %b %Y')
+                    
                     flash('Registration successful!', 'success')
                     return redirect(url_for('dashboard'))
                     
@@ -181,6 +213,22 @@ def login():
                         session['location'] = user['location']
                         session['profile_pic'] = user['profile_pic']
                         
+                        # Add created_at to session (date formatting)
+                        if user.get('created_at'):
+                            created_at = user['created_at']
+                            # Format date: "03 Jan 2026"
+                            try:
+                                # PostgreSQL timestamp format
+                                if isinstance(created_at, str):
+                                    created_at = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')
+                                formatted_date = created_at.strftime('%d %b %Y')
+                                session['created_at'] = formatted_date
+                            except Exception as date_error:
+                                # If formatting fails, use raw date
+                                session['created_at'] = str(created_at).split()[0] if created_at else 'Recently'
+                        else:
+                            session['created_at'] = 'Recently'
+                        
                         flash('Login successful!', 'success')
                         return redirect(url_for('dashboard'))
                     else:
@@ -209,15 +257,46 @@ def dashboard():
 @app.route('/services')
 @login_required
 def services():
-    """Display active services"""
+    """Display active services - UPDATED TO USE CLOUDINARY"""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Fetch services from database
                 cur.execute(
                     "SELECT * FROM services WHERE status = 'active' ORDER BY name"
                 )
                 services_list = cur.fetchall()
-                
+        
+        # ✅ CLOUDINARY INTEGRATION FOR SERVICES
+        try:
+            # Get all images from Cloudinary services folder
+            cloudinary_services = cloudinary.api.resources(
+                type="upload",
+                prefix=SERVICES_FOLDER,
+                max_results=100
+            )
+            
+            # Create a mapping of service names to Cloudinary URLs
+            cloudinary_images = {}
+            for resource in cloudinary_services.get('resources', []):
+                # Extract service name from filename (remove folder and extension)
+                filename = os.path.splitext(os.path.basename(resource['public_id']))[0]
+                service_name = filename.replace('_', ' ').title()
+                cloudinary_images[service_name.lower()] = resource['secure_url']
+            
+            # Update services list with Cloudinary images if available
+            for service in services_list:
+                service_name = service['name'].lower()
+                if service_name in cloudinary_images:
+                    service['photo'] = cloudinary_images[service_name]
+                elif not service.get('photo'):
+                    # Use a default service image from Cloudinary
+                    service['photo'] = "https://res.cloudinary.com/demo/image/upload/v1633427556/sample_service.jpg"
+                    
+        except Exception as cloudinary_error:
+            print(f"Cloudinary error for services: {cloudinary_error}")
+            # If Cloudinary fails, keep existing images
+            
         return render_template('services.html', services=services_list)
     except Exception as e:
         flash(f'Error loading services: {str(e)}', 'error')
@@ -226,7 +305,7 @@ def services():
 @app.route('/menu')
 @login_required
 def menu():
-    """Display active menu items"""
+    """Display active menu items - UPDATED TO USE CLOUDINARY"""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -234,7 +313,37 @@ def menu():
                     "SELECT * FROM menu WHERE status = 'active' ORDER BY name"
                 )
                 menu_items = cur.fetchall()
-                
+        
+        # ✅ CLOUDINARY INTEGRATION FOR MENU ITEMS
+        try:
+            # Get all images from Cloudinary menu folder
+            cloudinary_menu = cloudinary.api.resources(
+                type="upload",
+                prefix=MENU_FOLDER,
+                max_results=100
+            )
+            
+            # Create a mapping of menu item names to Cloudinary URLs
+            cloudinary_images = {}
+            for resource in cloudinary_menu.get('resources', []):
+                # Extract menu name from filename (remove folder and extension)
+                filename = os.path.splitext(os.path.basename(resource['public_id']))[0]
+                menu_name = filename.replace('_', ' ').title()
+                cloudinary_images[menu_name.lower()] = resource['secure_url']
+            
+            # Update menu list with Cloudinary images if available
+            for menu_item in menu_items:
+                item_name = menu_item['name'].lower()
+                if item_name in cloudinary_images:
+                    menu_item['photo'] = cloudinary_images[item_name]
+                elif not menu_item.get('photo'):
+                    # Use a default menu image from Cloudinary
+                    menu_item['photo'] = "https://res.cloudinary.com/demo/image/upload/v1633427556/sample_food.jpg"
+                    
+        except Exception as cloudinary_error:
+            print(f"Cloudinary error for menu: {cloudinary_error}")
+            # If Cloudinary fails, keep existing images
+            
         return render_template('menu.html', menu_items=menu_items)
     except Exception as e:
         flash(f'Error loading menu: {str(e)}', 'error')
@@ -560,25 +669,30 @@ def profile():
         if new_password and new_password != confirm_password:
             errors.append('Passwords do not match')
         
-        # Handle profile picture
-        profile_pic = session.get('profile_pic', 'default-avatar.jpg')
+        # ✅ CLOUDINARY PROFILE PICTURE HANDLING - UPDATED
+        profile_pic = session.get('profile_pic', DEFAULT_AVATAR_URL)
+        
         if 'profile_pic' in request.files:
             file = request.files['profile_pic']
             if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                ext = filename.rsplit('.', 1)[1].lower()
-                unique_filename = f"{secrets.token_hex(8)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
-                
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                file.save(filepath)
-                
-                # Delete old profile picture if not default
-                if profile_pic != 'default-avatar.jpg':
-                    old_path = os.path.join(app.config['UPLOAD_FOLDER'], profile_pic)
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-                
-                profile_pic = unique_filename
+                try:
+                    # ✅ Upload to Cloudinary
+                    result = cloudinary.uploader.upload(
+                        file,
+                        folder="profile_pics",
+                        public_id=f"user_{secrets.token_hex(8)}",
+                        overwrite=True,
+                        transformation=[
+                            {'width': 500, 'height': 500, 'crop': 'fill'},
+                            {'quality': 'auto', 'fetch_format': 'auto'}
+                        ]
+                    )
+                    profile_pic = result["secure_url"]
+                    
+                except Exception as e:
+                    flash(f'Profile photo upload failed: {str(e)}', 'warning')
+                    # Keep existing profile picture
+                    profile_pic = session.get('profile_pic', DEFAULT_AVATAR_URL)
         
         if errors:
             for error in errors:
@@ -645,7 +759,7 @@ def profile():
 @app.route('/get_service_details/<int:service_id>')
 @login_required
 def get_service_details(service_id):
-    """Get service details for modal"""
+    """Get service details for modal - UPDATED TO USE CLOUDINARY"""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -656,11 +770,29 @@ def get_service_details(service_id):
                 service = cur.fetchone()
                 
                 if service:
+                    # ✅ CLOUDINARY: Try to get image from Cloudinary
+                    service_name = service['name'].lower()
+                    try:
+                        # Search for service image in Cloudinary
+                        search_result = cloudinary.api.resources_by_asset_folder(
+                            asset_folder=SERVICES_FOLDER,
+                            max_results=100
+                        )
+                        
+                        for resource in search_result.get('resources', []):
+                            filename = os.path.splitext(os.path.basename(resource['public_id']))[0]
+                            if service_name in filename.lower():
+                                service['photo'] = resource['secure_url']
+                                break
+                    except Exception as cloudinary_error:
+                        print(f"Cloudinary error for service details: {cloudinary_error}")
+                        # Keep existing photo if Cloudinary fails
+                    
                     return jsonify({
                         'success': True,
                         'service': {
                             'name': service['name'],
-                            'photo': service['photo'],
+                            'photo': service.get('photo', 'https://res.cloudinary.com/demo/image/upload/v1633427556/sample_service.jpg'),
                             'price': float(service['price']),
                             'discount': float(service['discount']),
                             'final_price': float(service['final_price']),
@@ -675,7 +807,7 @@ def get_service_details(service_id):
 @app.route('/get_menu_details/<int:menu_id>')
 @login_required
 def get_menu_details(menu_id):
-    """Get menu item details for modal"""
+    """Get menu item details for modal - UPDATED TO USE CLOUDINARY"""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -686,11 +818,29 @@ def get_menu_details(menu_id):
                 menu_item = cur.fetchone()
                 
                 if menu_item:
+                    # ✅ CLOUDINARY: Try to get image from Cloudinary
+                    item_name = menu_item['name'].lower()
+                    try:
+                        # Search for menu image in Cloudinary
+                        search_result = cloudinary.api.resources_by_asset_folder(
+                            asset_folder=MENU_FOLDER,
+                            max_results=100
+                        )
+                        
+                        for resource in search_result.get('resources', []):
+                            filename = os.path.splitext(os.path.basename(resource['public_id']))[0]
+                            if item_name in filename.lower():
+                                menu_item['photo'] = resource['secure_url']
+                                break
+                    except Exception as cloudinary_error:
+                        print(f"Cloudinary error for menu details: {cloudinary_error}")
+                        # Keep existing photo if Cloudinary fails
+                    
                     return jsonify({
                         'success': True,
                         'menu': {
                             'name': menu_item['name'],
-                            'photo': menu_item['photo'],
+                            'photo': menu_item.get('photo', 'https://res.cloudinary.com/demo/image/upload/v1633427556/sample_food.jpg'),
                             'price': float(menu_item['price']),
                             'discount': float(menu_item['discount']),
                             'final_price': float(menu_item['final_price']),
@@ -701,6 +851,85 @@ def get_menu_details(menu_id):
                     return jsonify({'success': False, 'message': 'Menu item not found'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+# ============================================
+# FORGOT PASSWORD ROUTES - UPDATED WITH FIREBASE
+# ============================================
+
+@app.route('/forgot-password')
+def forgot_password():
+    """Display forgot password page with Firebase config"""
+    # Pass Firebase config to template (hardcoded values)
+    firebase_config = {
+        'FIREBASE_API_KEY': 'AIzaSyBmZG2Xi5WNXsEbY1gj4MQ6PKnS0gu1S4s',
+        'FIREBASE_AUTH_DOMAIN': 'bite-me-buddy.firebaseapp.com',
+        'FIREBASE_PROJECT_ID': 'bite-me-buddy',
+        'FIREBASE_APP_ID': '1:387282094580:web:422e09cff55a0ed47bd1a1',
+        'FIREBASE_TEST_PHONE': '+911234567890',
+        'FIREBASE_TEST_OTP': '123456'
+    }
+    return render_template('forgot_password.html', **firebase_config)
+
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    """Handle password reset after OTP verification"""
+    try:
+        # Get form data
+        mobile = request.form.get('mobile', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        # Basic validation
+        if not mobile or not password:
+            flash('Please fill all fields', 'error')
+            return redirect('/forgot-password')
+        
+        # Validate mobile number format (ensure it starts with +)
+        if not mobile.startswith('+'):
+            # If it's 10 digits, add +91
+            if mobile.isdigit() and len(mobile) == 10:
+                mobile = '+91' + mobile
+            else:
+                flash('Please enter a valid mobile number with country code', 'error')
+                return redirect('/forgot-password')
+        
+        # Generate hash for new password
+        hashed_password = generate_password_hash(password)
+        
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    # First check if user exists with this mobile
+                    # Note: Your database uses 'phone' column, not 'mobile'
+                    cur.execute("SELECT id FROM users WHERE phone = %s", (mobile,))
+                    user = cur.fetchone()
+                    
+                    if not user:
+                        flash('Mobile number not registered', 'error')
+                        return redirect('/forgot-password')
+                    
+                    # Update password
+                    cur.execute(
+                        "UPDATE users SET password = %s WHERE phone = %s",
+                        (hashed_password, mobile)
+                    )
+                    
+                    # Check if update was successful
+                    if cur.rowcount == 0:
+                        flash('Failed to update password', 'error')
+                        return redirect('/forgot-password')
+                    
+                    conn.commit()
+                    
+                    flash('Password reset successful! Please login with new password.', 'success')
+                    return redirect(url_for('login'))
+                    
+        except Exception as db_error:
+            flash(f'Database error: {str(db_error)}', 'error')
+            return redirect('/forgot-password')
+        
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'error')
+        return redirect('/forgot-password')
 
 if __name__ == '__main__':
     # Create uploads directory if it doesn't exist
