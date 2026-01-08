@@ -1,4 +1,4 @@
-# migrate_profile_pics.py - COMPLETELY FIXED VERSION (NO SIGNATURE ERRORS)
+# migrate_profile_pics.py - FIXED TRANSFORMATION ERROR VERSION
 import os
 import sys
 import psycopg
@@ -27,28 +27,14 @@ def get_db_connection():
     
     return psycopg.connect(database_url, row_factory=dict_row)
 
-def check_cloudinary_credentials():
-    """Verify Cloudinary credentials are working"""
-    print("🔐 Checking Cloudinary credentials...")
-    try:
-        # Simple test to verify credentials
-        test_result = cloudinary.uploader.upload(
-            "https://res.cloudinary.com/demo/image/upload/sample.jpg",
-            folder="test_folder",
-            public_id="test_connection",
-            overwrite=True,
-            transformation="w_100,h_100,c_fill"
-        )
-        print("✅ Cloudinary credentials are valid!")
-        return True
-    except Exception as e:
-        print(f"❌ Cloudinary credentials error: {str(e)}")
-        return False
-
 def migrate_existing_users():
-    """Migrate existing users' profile pics to Cloudinary - FIXED SIGNATURE ERROR"""
-    print("🚀 Starting migration of existing profile pictures to Cloudinary...")
+    """Migrate existing users' profile pics to Cloudinary - CORRECT TRANSFORMATION FORMAT"""
     print("=" * 60)
+    print("PROFILE PICTURE MIGRATION TOOL")
+    print("CORRECT TRANSFORMATION FORMAT VERSION")
+    print("=" * 60)
+    
+    print("🚀 Starting migration of existing profile pictures...")
     
     total_start_time = time.time()
     
@@ -56,7 +42,7 @@ def migrate_existing_users():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Get all users with local profile pics or default avatars
+        # Get all users with local profile pics
         cur.execute("""
             SELECT id, profile_pic, full_name, email
             FROM users 
@@ -79,7 +65,6 @@ def migrate_existing_users():
         
         migrated_count = 0
         failed_count = 0
-        skipped_count = 0
         default_set_count = 0
         
         # Default Cloudinary avatar URL
@@ -104,15 +89,23 @@ def migrate_existing_users():
                     try:
                         print(f"   📤 Uploading to Cloudinary...")
                         
-                        # ✅ FIXED: Use transformation string to avoid signature error
                         upload_start = time.time()
                         
+                        # ✅ FIXED: CORRECT TRANSFORMATION FORMAT USING DICTIONARY
                         result = cloudinary.uploader.upload(
                             filepath,
                             folder="profile_pics",
                             public_id=f"migrated_user_{user_id}_{int(time.time())}",
                             overwrite=True,
-                            transformation="w_500,h_500,c_fill,q_auto,f_auto"
+                            transformation=[
+                                {
+                                    "width": 500,
+                                    "height": 500,
+                                    "crop": "fill",
+                                    "quality": "auto",
+                                    "fetch_format": "auto"
+                                }
+                            ]
                         )
                         
                         upload_time = time.time() - upload_start
@@ -125,9 +118,6 @@ def migrate_existing_users():
                             (cloudinary_url, user_id)
                         )
                         
-                        # Optional: Delete local file after successful upload
-                        # os.remove(filepath)
-                        
                         print(f"   ✅ Uploaded in {upload_time:.2f}s")
                         print(f"   🔗 New URL: {cloudinary_url[:50]}...")
                         migrated_count += 1
@@ -137,7 +127,17 @@ def migrate_existing_users():
                         failed_count += 1
                 else:
                     print(f"   ⚠️  Local file not found: {filepath}")
-                    skipped_count += 1
+                    # Set to default
+                    try:
+                        cur.execute(
+                            "UPDATE users SET profile_pic = %s WHERE id = %s",
+                            (DEFAULT_AVATAR_URL, user_id)
+                        )
+                        print(f"   🔄 Set to Cloudinary default avatar")
+                        default_set_count += 1
+                    except Exception as e:
+                        print(f"   ❌ Failed to set default: {str(e)}")
+                        failed_count += 1
             
             # Case 2: Null, empty, or default avatar
             elif not old_pic or old_pic == '' or old_pic == 'None' or 'default-avatar' in str(old_pic):
@@ -151,36 +151,6 @@ def migrate_existing_users():
                 except Exception as e:
                     print(f"   ❌ Failed to set default: {str(e)}")
                     failed_count += 1
-            
-            # Case 3: Already has Cloudinary URL but needs transformation fix
-            elif 'cloudinary' in old_pic and 'w_500' not in old_pic:
-                try:
-                    # Extract public_id from existing URL
-                    parts = old_pic.split('/')
-                    if 'upload' in parts:
-                        upload_index = parts.index('upload')
-                        if upload_index + 1 < len(parts):
-                            # Re-upload with transformation
-                            print(f"   🔧 Fixing existing Cloudinary image...")
-                            
-                            result = cloudinary.uploader.upload(
-                                old_pic,
-                                folder="profile_pics",
-                                public_id=f"fixed_user_{user_id}_{int(time.time())}",
-                                overwrite=True,
-                                transformation="w_500,h_500,c_fill,q_auto,f_auto"
-                            )
-                            
-                            cur.execute(
-                                "UPDATE users SET profile_pic = %s WHERE id = %s",
-                                (result["secure_url"], user_id)
-                            )
-                            
-                            print(f"   ✅ Fixed transformation")
-                            migrated_count += 1
-                except Exception as e:
-                    print(f"   ⚠️  Could not fix existing URL: {str(e)[:80]}")
-                    skipped_count += 1
         
         # Commit all changes
         conn.commit()
@@ -194,7 +164,6 @@ def migrate_existing_users():
         print(f"👥 Total users processed: {len(users)}")
         print(f"✅ Successfully migrated: {migrated_count}")
         print(f"🔄 Set to default: {default_set_count}")
-        print(f"⚠️  Skipped: {skipped_count}")
         print(f"❌ Failed: {failed_count}")
         print("=" * 60)
         
@@ -249,62 +218,7 @@ def verify_migration(cur):
     else:
         print(f"\n⚠️  ATTENTION: {local_users + null_users} users still need migration")
 
-def create_migration_report():
-    """Create a detailed migration report"""
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        cur.execute("""
-            SELECT 
-                COUNT(*) as total_users,
-                SUM(CASE WHEN profile_pic LIKE '%cloudinary%' THEN 1 ELSE 0 END) as cloudinary_users,
-                SUM(CASE WHEN profile_pic NOT LIKE 'http%' AND profile_pic IS NOT NULL AND profile_pic != '' THEN 1 ELSE 0 END) as local_users,
-                SUM(CASE WHEN profile_pic IS NULL OR profile_pic = '' THEN 1 ELSE 0 END) as null_users
-            FROM users
-        """)
-        
-        stats = cur.fetchone()
-        
-        report = f"""
-        ============================================
-        PROFILE PICTURE MIGRATION REPORT
-        Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-        ============================================
-        
-        📊 STATISTICS:
-        Total Users: {stats['total_users']}
-        Cloudinary Users: {stats['cloudinary_users']}
-        Local File Users: {stats['local_users']}
-        Null/Empty Users: {stats['null_users']}
-        
-        📈 MIGRATION STATUS:
-        Migration Percentage: {(stats['cloudinary_users']/stats['total_users']*100):.1f}%
-        
-        {'✅ COMPLETE' if stats['local_users'] == 0 and stats['null_users'] == 0 else '⚠️  INCOMPLETE'}
-        
-        ============================================
-        """
-        
-        print(report)
-        
-        # Save report to file
-        with open('migration_report.txt', 'w') as f:
-            f.write(report)
-        
-        print("📄 Report saved to 'migration_report.txt'")
-        
-        conn.close()
-        
-    except Exception as e:
-        print(f"Error creating report: {str(e)}")
-
 if __name__ == '__main__':
-    print("=" * 60)
-    print("PROFILE PICTURE MIGRATION TOOL")
-    print("CLOUDINARY SIGNATURE ERROR FIXED VERSION")
-    print("=" * 60)
-    
     # Check environment variables
     required_vars = ['DATABASE_URL', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']
     missing_vars = [var for var in required_vars if not os.environ.get(var)]
@@ -320,55 +234,13 @@ if __name__ == '__main__':
         print("export CLOUDINARY_API_SECRET='your_api_secret'")
         sys.exit(1)
     
-    # Check Cloudinary credentials
-    if not check_cloudinary_credentials():
-        print("\n❌ Cannot proceed with invalid Cloudinary credentials")
-        sys.exit(1)
+    success = migrate_existing_users()
+    
+    if success:
+        print("\n✅ Migration completed successfully!")
+    else:
+        print("\n❌ Migration failed!")
     
     print("\n" + "=" * 60)
-    print("MIGRATION OPTIONS:")
-    print("1. Run full migration")
-    print("2. Check migration status only")
-    print("3. Generate migration report")
+    print("Migration tool completed.")
     print("=" * 60)
-    
-    try:
-        choice = input("Select option (1/2/3): ").strip()
-        
-        if choice == '1':
-            print("\n🚀 Starting full migration...")
-            confirmation = input("Are you sure? This will update all user profile pictures (y/n): ")
-            if confirmation.lower() == 'y':
-                success = migrate_existing_users()
-                if success:
-                    create_migration_report()
-            else:
-                print("Migration cancelled.")
-        
-        elif choice == '2':
-            print("\n🔍 Checking migration status...")
-            try:
-                conn = get_db_connection()
-                cur = conn.cursor()
-                verify_migration(cur)
-                conn.close()
-            except Exception as e:
-                print(f"Error checking status: {str(e)}")
-        
-        elif choice == '3':
-            print("\n📄 Generating migration report...")
-            create_migration_report()
-        
-        else:
-            print("Invalid choice. Exiting.")
-    
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Migration interrupted by user.")
-    
-    except Exception as e:
-        print(f"\n💥 Unexpected error: {str(e)}")
-    
-    finally:
-        print("\n" + "=" * 60)
-        print("Migration tool completed.")
-        print("=" * 60)
