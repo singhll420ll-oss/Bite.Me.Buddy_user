@@ -29,7 +29,7 @@
                                 <h3>Order #{{ order.order_id }}</h3>
                                 <p class="order-date">
                                     <i class="far fa-calendar"></i>
-                                    {{ order.order_date }}
+                                    {{ order.order_date.strftime('%d %b %Y, %I:%M %p') }}
                                 </p>
                             </div>
                             <span class="order-status status-{{ order.status|lower }}">
@@ -37,17 +37,29 @@
                             </span>
                         </div>
                         
+                        <!-- ✅ UPDATED ORDER ITEMS SECTION -->
                         <div class="order-items">
                             <p class="items-count">
                                 <i class="fas fa-box"></i>
                                 {{ order.items|length }} item{{ 's' if order.items|length != 1 }}
                             </p>
-                            {% for item in order.items %}
-                                <div class="order-item">
-                                    <span>{{ item.item_name }}</span>
-                                    <span>{{ item.quantity }} × ₹{{ "%.2f"|format(item.price) }}</span>
-                                </div>
-                            {% endfor %}
+                            <div class="items-list">
+                                {% for item in order.items %}
+                                    <div class="order-item">
+                                        <div class="item-info">
+                                            <span class="item-type {{ item.type|lower }}">
+                                                {{ item.type|title }}
+                                            </span>
+                                            <span class="item-name">{{ item.name }}</span>
+                                        </div>
+                                        <div class="item-details">
+                                            <span class="item-quantity">{{ item.quantity }} ×</span>
+                                            <span class="item-price">₹{{ "%.2f"|format(item.price) }}</span>
+                                            <span class="item-total">₹{{ "%.2f"|format(item.price * item.quantity) }}</span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
                         
                         <div class="order-footer">
@@ -67,9 +79,14 @@
                 <i class="fas fa-history fa-3x"></i>
                 <h3>No orders yet</h3>
                 <p>Your order history will appear here</p>
-                <a href="{{ url_for('services') }}" class="btn btn-primary">
-                    <i class="fas fa-concierge-bell"></i> Browse Services
-                </a>
+                <div class="empty-actions">
+                    <a href="{{ url_for('services') }}" class="btn btn-primary">
+                        <i class="fas fa-concierge-bell"></i> Browse Services
+                    </a>
+                    <a href="{{ url_for('menu') }}" class="btn btn-primary">
+                        <i class="fas fa-utensils"></i> View Menu
+                    </a>
+                </div>
             </div>
         {% endif %}
     </main>
@@ -98,4 +115,110 @@
         </a>
     </nav>
 </div>
+
+<!-- ✅ ADD SOME STYLES FOR BETTER DISPLAY -->
+<style>
+    .order-card {
+        position: relative;
+    }
+    
+    .items-list {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 10px;
+        margin: 10px 0;
+    }
+    
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dashed #dee2e6;
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .item-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .item-type {
+        font-size: 0.75em;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .item-type.service {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+    
+    .item-type.menu {
+        background: #e8f5e9;
+        color: #388e3c;
+    }
+    
+    .item-name {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .item-details {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #555;
+    }
+    
+    .item-quantity {
+        color: #666;
+    }
+    
+    .item-price {
+        font-weight: 500;
+    }
+    
+    .item-total {
+        font-weight: 600;
+        color: #333;
+        min-width: 60px;
+        text-align: right;
+    }
+    
+    .empty-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .order-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        
+        .item-details {
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .empty-actions {
+            flex-direction: column;
+        }
+        
+        .empty-actions .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    }
+</style>
 {% endblock %}
