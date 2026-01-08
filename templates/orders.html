@@ -29,7 +29,7 @@
                                 <h3>Order #{{ order.order_id }}</h3>
                                 <p class="order-date">
                                     <i class="far fa-calendar"></i>
-                                    {{ order.order_date.strftime('%d %b %Y, %I:%M %p') }}
+                                    {{ order.order_date }}
                                 </p>
                             </div>
                             <span class="order-status status-{{ order.status|lower }}">
