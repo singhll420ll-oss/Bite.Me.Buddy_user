@@ -113,11 +113,6 @@ EOF
         </div>
         
         <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px;">Profile Picture (Optional)</label>
-            <input type="file" name="profile_pic" accept="image/*" style="width: 100%; padding: 8px;">
-        </div>
-        
-        <div style="margin-bottom: 15px;">
             <label style="display: block; margin-bottom: 5px;">Password</label>
             <input type="password" name="password" required style="width: 100%; padding: 8px;">
         </div>
@@ -225,20 +220,21 @@ body {
 EOF
 fi
 
-# Upgrade pip
+# Upgrade pip to latest version
 pip install --upgrade pip
 
 # Install Python dependencies
 echo "Installing dependencies..."
 pip install -r requirements.txt
 
-# ✅ IMPORTANT: Initialize database tables
-echo "Initializing database tables..."
-python -c "
-from app import create_tables_if_not_exists
-create_tables_if_not_exists()
-print('✅ Database tables initialized successfully')
-"
+# Initialize database (create tables)
+echo "Initializing database..."
+if [ -f "init_db.py" ]; then
+    python init_db.py
+else
+    echo "Warning: init_db.py not found. Database tables need to be created manually."
+    echo "Run the SQL commands from schema.sql in your PostgreSQL database."
+fi
 
 # Set permissions
 chmod -R 755 static/uploads
